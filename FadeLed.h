@@ -14,10 +14,10 @@
 #include "WProgram.h"
 #endif
 
-#if defined ( ESP8266 )
-  #include <pgmspace.h>
+#if defined(ESP8266)
+#include <pgmspace.h>
 #else
-  #include <avr/pgmspace.h>
+#include <avr/pgmspace.h>
 #endif
 
 /**
@@ -29,8 +29,15 @@
  *  
  *  @warning Can't simply increase the number to have more PWM levels. It's limited to the hardware.
  */
-#define FADE_LED_PWM_BITS 8
+#if defined(ESP8266)
+//ESP8266 has 10-bit PWM
+//#define FADE_LED_PWM_BITS 10 //Commented to force 8bits
+#else
+//Change this to match the number of PWM bit on other devices
+//#define FADE_LED_PWM_BITS 8 //commented to force 8bits
+#endif
 
+#define FADE_LED_PWM_BITS 8
 
 /**
  *  @brief Sets the variable type used for the brightness.
@@ -40,11 +47,10 @@
  *  @see FADE_LED_PWM_BITS
  */
 #if FADE_LED_PWM_BITS <= 8
-typedef byte flvar_t;
+typedef uint8_t flvar_t;
 #else
-typedef unsigned int flvar_t;
+typedef uint16_t flvar_t;
 #endif
-
 
 /**
  *  @brief Maximum number of FadeLed objects
@@ -52,7 +58,7 @@ typedef unsigned int flvar_t;
  *  **Default** = 6, the number of hardware PWM pins on an Uno/Pro Mini/Nano
  */
 #ifndef FADE_LED_MAX_LED
-#define FADE_LED_MAX_LED  6
+#define FADE_LED_MAX_LED 6
 #endif
 
 /**
@@ -65,7 +71,7 @@ typedef unsigned int flvar_t;
  *  @see FADE_LED_PWM_BITS
  */
 #ifndef FADE_LED_RESOLUTION
-#define FADE_LED_RESOLUTION ((1 <<FADE_LED_PWM_BITS) -1)
+#define FADE_LED_RESOLUTION ((1 << FADE_LED_PWM_BITS) - 1)
 #endif
 
 #include "FadeLedGamma.h"
@@ -77,10 +83,11 @@ typedef unsigned int flvar_t;
  *  
  *  @see set(), update()
  */
-class FadeLed{
-  public:
-    /**
-     *  @brief Constructor of a FadeLed object
+class FadeLed
+{
+public:
+  /**
+     *  @brief Simple constructor of a FadeLed object with gamma correction.
      *  
      *  @details Makes a object to fade a specific pin. You can make a object for each PWM pin you want to fade. Updating all objects is done by simply calling update()
      *  
@@ -92,11 +99,52 @@ class FadeLed{
      *  
      *  @param [in] pin The PWM pin to fade with this object
      *  
-     *  @see update(), set(), on(), off()
+     *  @see FadeLed(byte, const flvar_t*, flvar_t), update(), set(), on(), off()
      */
-    FadeLed(byte pin);
-    
-    /**
+  FadeLed(byte pin);
+
+  /**
+     *  @brief Constructor of a FadeLed object
+     *  
+     *  @details Makes a object to fade a specific pin. You can make a object for each PWM pin you want to fade. Updating all objects is done by simply calling update()
+     *  
+     *  When created the default brightness is **0**. You can start at a different brightness by calling begin().
+     *  
+     *  With this constructor you can supply your own gamma table as gammaLookup. This must be an array of type flvar_t and should be placed in **PROGMEM**. Specify the largest steps in that table as biggestStep.
+     *  
+     *  
+     *  @note Make all objects global (or static if you really must) because a destruct will lead to errors!
+     *  
+     *  @warning Don't make two objects for the same pin, they will conflict!
+     *  
+     *  @param [in] pin         The PWM pin to fade with this object
+     *  @param [in] gammaLookup Gamma table
+     *  @param [in] biggestStep The largest possible value of the gamma table (gammaLookup).
+     *  
+     *  @see FadeLed(byte), FadeLed(byte, bool), update(), set(), on(), off()
+     */
+  FadeLed(byte pin, const flvar_t *gammaLookup, flvar_t biggestStep);
+
+  /**
+     *  @brief Simple constructor of a FadeLed object
+     *  
+     *  @details Simalair to FadeLed(byte) but with the possibility to disable the use of a gamma table by specifying false as hasGammaTable.
+     *  
+     *  @param [in] pin           The PWM pin to fade with this object
+     *  @param [in] hasGammaTable **false** to disable the use of a gamma table, **true** to use the default gamma table.
+     *  
+     *  @see FadeLed(byte)
+     */
+  FadeLed(byte pin, bool hasGammaTable);
+
+  /**
+     *  @brief Simple destructor of a FadeLed object
+     *  
+     *  @details Destroy your FadeLed object
+     */
+  ~FadeLed();
+
+  /**
      *  @brief Set a direct begin value to start at without fade
      *  
      *  @details If you want to directly start the LED at a certain brightness you can set it with this. This will directly set the brightness without fading.
@@ -107,9 +155,9 @@ class FadeLed{
      *  
      *  @param [in] val The brightness to start at.
      */
-    void begin(flvar_t val);
-    
-    /**
+  void begin(flvar_t val);
+
+  /**
      *  @brief Set the brightness to fade to
      *  
      *  @details Set the brightness to which the LED should fade to. 
@@ -126,9 +174,9 @@ class FadeLed{
      *  
      *  @param [in] val The brightness to fade to.
      */
-    void set(flvar_t val);
-    
-    /**
+  void set(flvar_t val);
+
+  /**
      *  @brief Returns the last **set** brightness
      *  
      *  @details Returns the last **set** brightness via set() (or begin())
@@ -137,9 +185,9 @@ class FadeLed{
      *  
      *  @return The last set brightness
      */
-    flvar_t get();
-    
-    /**
+  flvar_t get();
+
+  /**
      *  @brief Returns the current brightness
      *  
      *  @details Returns the current brightness of the output
@@ -150,9 +198,9 @@ class FadeLed{
      *  
      *  @return Current brightness of the LED.
      */
-    flvar_t getCurrent();
-    
-    /**
+  flvar_t getCurrent();
+
+  /**
      *  @brief Returns if the LED is done fading
      *  
      *  @details **true** if the LED is done fading and reached the set() value.
@@ -161,9 +209,9 @@ class FadeLed{
      *  
      *  @return If the LED is fading or not
      */
-    bool done();
-    
-    /**
+  bool done();
+
+  /**
      *  @brief Fade to max brightness
      *  
      *  @details Sets the LED to fade to max brightness. Same as calling `set(255)`
@@ -171,9 +219,9 @@ class FadeLed{
      *  @see set()
      *  
      */
-    void on();
-    
-    /**
+  void on();
+
+  /**
      *  @brief Fade to off
      *  
      *  @details Sets the LED to fade to off. Same as calling `set(0)`
@@ -181,18 +229,18 @@ class FadeLed{
      *  @see set()
      *  
      */
-    void off();
-    
-    /**
+  void off();
+
+  /**
      *  @brief Sets the start brightness directly to full.
      *  
      *  @details Short for calling `begin(255)`
      *  
      *  @see begin()
      */
-    void beginOn();
-    
-    /**
+  void beginOn();
+
+  /**
      *  @brief Set the time a (full) fade will take
      *  
      *  @details This will set how much time a fade will take.
@@ -212,9 +260,9 @@ class FadeLed{
      *  @param [in] time      The time (ms) a fade will take
      *  @param [in] constTime **[optional]** true to use constant fade time. **Default** constant fading speed
      */
-    void setTime(unsigned long time, bool constTime = false);
-    
-    /**
+  void setTime(unsigned long time, bool constTime = false);
+
+  /**
      *  @brief Returns if the LED is still fading up
      *  
      *  @details **true** if fading up. 
@@ -223,9 +271,9 @@ class FadeLed{
      *  
      *  @return if the LED is fading up
      */
-    bool rising();
-    
-        /**
+  bool rising();
+
+  /**
      *  @brief Returns if the LED is still fading down
      *  
      *  @details **true** if fading down. 
@@ -234,18 +282,18 @@ class FadeLed{
      *  
      *  @return if the LED is fading down
      */
-    bool falling();
-    
-    /**
+  bool falling();
+
+  /**
      *  @brief Stops the current fading
      *  
      *  @details Makes the current brightness the set brightness
      *  
      *  Useful if you fade to find the desired brightness
      */
-    void stop();
-    
-    /** 
+  void stop();
+
+  /** 
      *  @brief Sets a gamma table to use
      *  
      *  @details Let this FadeLed object use a specific gamma table. This table **must** be put in PROGMEM to work. #flvar_t can be used as variable type to get a variable type that matches the (set) bit resolution of the PWM.
@@ -259,11 +307,11 @@ class FadeLed{
      *  led.setGammaTable(myGammaTable, 19)
      *  ```
      *  
-     *  Pointing to a NULL pointer will result in **no** gamma correction. biggestStep will then limit the brightness. But easier to use noGammaTable().
+     *  Pointing to a nullptr will result in **no** gamma correction. biggestStep will then limit the brightness. But easier to use noGammaTable().
      *  
      *  ```C++
      *  //No gamma table, 8-bit PWM
-     *  led.setGammaTable(NULL, 255);
+     *  led.setGammaTable(nullptr, 255);
      *  ```
      *  
      *  It will **stop** the current fading. It also **resets** it to start from 0 for the next fade. 
@@ -277,20 +325,20 @@ class FadeLed{
      *  @param [in] table The gamma table in PROGMEM
      *  @param [in] biggestStep The biggest step of that gamma table (aka size -1) If no parameter is used 100 is assumed to be the top value possible.
      */
-    void setGammaTable(const flvar_t* table, flvar_t biggestStep = 100);
-    
-    /**
+  void setGammaTable(const flvar_t *table, flvar_t biggestStep = 100);
+
+  /**
      *  @brief Use no gamma correction for full range
      *  
      *  @details Let this object use no gamma correction and just use the full PWM range. 
      *  
-     *  It's short for `setGammaTable(NULL, FADE_LED_RESOLUTION)`
+     *  It's short for `setGammaTable(nullptr, FADE_LED_RESOLUTION)`
      *  
      *  @see setGammaTable(), FADE_LED_RESOLUTION
      */
-    void noGammaTable();
-    
-    /**
+  void noGammaTable();
+
+  /**
      *  @brief Get gamma corrected value
      *  
      *  @details Gives the gamma corrected output level. Checks for the biggest possible step.
@@ -300,19 +348,18 @@ class FadeLed{
      *  @param [in] step The step to get the gamma corrected output level for. Limited to the biggest possible value
      *  @return The gamma corrected output level if a gamma table is used, otherwise it returns in.
      */
-    flvar_t getGammaValue(flvar_t step);
-    
-    /**
+  flvar_t getGammaValue(flvar_t step);
+
+  /**
      *  @brief Get the biggest brightness step
      *  
      *  @details Gives the biggest brightness step for the gamma table in use. If no table is in use, it returns the biggest output level.
      *  
      *  @return Biggest brightness step
      */
-    flvar_t getBiggestStep();
-    
-    
-    /**
+  flvar_t getBiggestStep();
+
+  /**
      *  @brief Updates all FadeLed objects
      *  
      *  @details This is the core function of FadeLed. Calling this function will check each object of FadeLed to see if the brightness needs changing (fade). 
@@ -328,9 +375,9 @@ class FadeLed{
      *  @note Call this function **often** in order not to skip steps. Make the code non-blocking aka **don't** use delay() anywhere! See [Blink Without Delay()](https://www.arduino.cc/en/Tutorial/BlinkWithoutDelay)
      *  
      */
-    static void update();
-    
-    /**
+  static void update();
+
+  /**
      *  @brief Sets the interval at which to update the fading
      *  
      *  @details Only every interval when calling update() it's checked to see if the brightness of the LEDs needs to change (fade) to leave time for other stuff. 
@@ -343,22 +390,20 @@ class FadeLed{
      * 
      *  @param [in] interval Interval in ms
      */
-    static void setInterval(unsigned int interval);
-    
-  protected:
-    byte _pin; //!< PWM pin to control
-    flvar_t _setVal; //!< The brightness to which last set to fade to
-    flvar_t _startVal; //!< The brightness at which the new fade needs to start
-    flvar_t _curVal; //!< Current brightness
-    bool _constTime; //!< Constant time fade or just constant speed fade
-    unsigned long _countMax; //!< The number of #_interval's a fade should take
-    unsigned long _count; //!< The number of #_interval's passed
-    const flvar_t* _gammaLookup; //!< Pointer to the Gamma table in PROGMEM
-    flvar_t _biggestStep; //!< The biggest input step possible
+  static void setInterval(unsigned int interval);
 
-    
-    
-    /**
+protected:
+  const byte _pin;             //!< PWM pin to control
+  flvar_t _setVal;             //!< The brightness to which last set to fade to
+  flvar_t _startVal;           //!< The brightness at which the new fade needs to start
+  flvar_t _curVal;             //!< Current brightness
+  bool _constTime;             //!< Constant time fade or just constant speed fade
+  unsigned long _countMax;     //!< The number of #_interval's a fade should take
+  unsigned long _count;        //!< The number of #_interval's passed
+  const flvar_t *_gammaLookup; //!< Pointer to the Gamma table in PROGMEM
+  flvar_t _biggestStep;        //!< The biggest input step possible
+
+  /**
      *  @brief Updates fading of this object only
      *  
      *  @details Can't be called directly (it's protected). Instead call update() to update all FadeLed objects.
@@ -366,9 +411,9 @@ class FadeLed{
      *  @see update()
      *  
      */
-    void updateThis();
-    
-    /**
+  void updateThis();
+
+  /**
      *  @Brief Gives the output level for a given gamma step
      *  
      *  @details Looks it up in the PROGMEM gamma table for this object if table is assigned. Deals with the variable size used.
@@ -384,24 +429,27 @@ class FadeLed{
      *  @param [in] step The step to get the gamma corrected output level for.
      *  @return The gamma corrected output level if a gamma table is used, otherwise it returns in.
      */
-    flvar_t getGamma(flvar_t step);
-    
-    static FadeLed* _ledList[FADE_LED_MAX_LED]; //!< array of pointers to all FadeLed objects
-    static byte _ledCount; //!< Next number of FadeLed object
-    static unsigned int _interval; //!< Interval (in ms) between updates
-    static unsigned int _millisLast; //!< Last time all FadeLed objects where updated
+  flvar_t getGamma(flvar_t step);
+
+  static FadeLed *_ledList[FADE_LED_MAX_LED]; //!< array of pointers to all FadeLed objects
+  static byte _ledCount;                      //!< Next number of FadeLed object
+  static unsigned int _interval;              //!< Interval (in ms) between updates
+  static unsigned int _millisLast;            //!< Last time all FadeLed objects where updated
 };
 
-inline flvar_t FadeLed::getGamma(flvar_t step){
-  if(_gammaLookup == NULL){
+inline flvar_t FadeLed::getGamma(flvar_t step)
+{
+  if (_gammaLookup == nullptr)
+  {
     return step;
   }
-  else{
-    #if FADE_LED_PWM_BITS <= 8
-      return pgm_read_byte_near(_gammaLookup + step);
-    #else
-      return pgm_read_word_near(_gammaLookup + step);
-    #endif
+  else
+  {
+#if FADE_LED_PWM_BITS <= 8
+    return pgm_read_byte_near(_gammaLookup + step);
+#else
+    return pgm_read_word_near(_gammaLookup + step);
+#endif
   }
 }
 

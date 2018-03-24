@@ -1,6 +1,8 @@
 #ifndef Main_h
 #define Main_h
 
+#include <arduino.h>
+
 #include "data\status.html.gz.h"
 #include "data\config.html.gz.h"
 #include "data\fw.html.gz.h"
@@ -22,13 +24,11 @@
 //include Application header file
 #include "WirelessRGBW.h"
 
-#define APPLICATION_NAME "DomoChip Wireless RGBW"
-#define APPLICATION_CLASS WebRGBW
-#define APPLICATION_VAR webRGBW
+#define APPLICATION1_NAME "WRGBW"
+#define APPLICATION1_DESC "DomoChip Wireless RGBW"
+#define APPLICATION1_CLASS WebRGBW
 
-#define VERSION_NUMBER "3.1"
-
-#define MODEL "WRGBW"
+#define VERSION_NUMBER "3.1.1"
 
 #define DEFAULT_AP_SSID "WirelessRGBW"
 #define DEFAULT_AP_PSK "PasswordRGBW"
