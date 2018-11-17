@@ -9,10 +9,13 @@
 #include "base\Utils.h"
 #include "base\Base.h"
 
+const char appDataPredefPassword[] PROGMEM = "ewcXoCt4HHjZUvY1";
+
+#include "data\status1.html.gz.h"
+#include "data\config1.html.gz.h"
+
 #include <ESP8266HTTPClient.h>
 #include "FadeLed.h"
-
-const char appDataPredefPassword[] PROGMEM = "ewcXoCt4HHjZUvY1";
 
 //gamma table for 8bits resolution
 const byte PROGMEM gamma8[] = {
@@ -52,6 +55,8 @@ private:
   String GenerateConfigJSON(bool forSaveFile);
   String GenerateStatusJSON();
   bool AppInit(bool reInit);
+  const uint8_t* GetHTMLContent(WebPageForPlaceHolder wp);
+  size_t GetHTMLContentSize(WebPageForPlaceHolder wp);
   void AppInitWebServer(AsyncWebServer &server, bool &shouldReboot, bool &pauseApplication);
   void AppRun();
 

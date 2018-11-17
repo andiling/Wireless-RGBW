@@ -1,0 +1,18 @@
+<div id="applicationName" style="display: none;">WirelessRGBW</div>
+<div id="shortApplicationName" style="display: none;">WRGBW</div>
+
+<h2 class="content-subhead">RGBW<span id="l3"><h6 style="display:inline"><b> Loading...</b></h6></span></h2>
+Current color : <span id="color"></span><br>
+
+<script>
+    $.getJSON("/gs1", function(GS1){
+
+        $.each(GS1,function(k,v){
+            $('#'+k).html(v);
+        })
+        $("#l3").fadeOut();
+    })
+    .fail(function(){
+        $("#l3").html('<h4 style="display:inline;color:red;"><b> Failed</b></h4>');
+    });
+</script>
